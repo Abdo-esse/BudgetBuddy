@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use App\Http\Requests\ExpenseRequest;
 use App\Http\Requests\StoreExpenseRequest;
 use App\Http\Requests\UpdateExpenseRequest;
 
@@ -21,13 +24,13 @@ class ExpenseController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \App\Http\Requests\StoreExpenseRequest  $request
+     * @param  \App\Http\Requests\ExpenseRequest  $request
      * @return \Illuminate\Http\Response
      */
     public function store(ExpenseRequest $request)
     {
-        $expense = $request->user()->expenses()->create($request);
-
+        $fields= $request->validated();
+        $expense = $request->user()->expenses()->create($fields);
         return response()->json([ 'message' => 'Expense créé avec succès'], 201);
     }
 
@@ -39,21 +42,23 @@ class ExpenseController extends Controller
      */
     public function show(Expense $expense)
     {
+        Gate::authorize('modify', $expense);
         return response()->json($expense, 200);
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \App\Http\Requests\UpdateExpenseRequest  $request
+     * @param  \App\Http\Requests\ExpenseRequest  $request
      * @param  \App\Models\Expense  $expense
      * @return \Illuminate\Http\Response
      */
     public function update(ExpenseRequest $request, Expense $expense)
     {
         Gate::authorize('modify', $expense);
+        $fields= $request->validated();
 
-        $expense->update($request);
+        $expense->update($fields);
 
         return response()->json(['message' => 'Expense mis à jour avec succès'], 200);
     }
