@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\JsonResponse;
+use App\Http\Requests\AuthRequest;
+use App\Http\Requests\LoginRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 /**
  * @OA\Tag(
@@ -42,7 +45,7 @@ class AuthController extends Controller
      *     @OA\Response(response=400, description="Validation error"),
      * )
      */
-    public function register(Request $request): JsonResponse
+    public function register(AuthRequest $request): JsonResponse
     {
          $user = User::create([
             'name' => $request['name'],
@@ -84,12 +87,9 @@ class AuthController extends Controller
      *     @OA\Response(response=401, description="Identifiants invalides"),
      * )
      */
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-            'password' => 'required|string'
-        ]);
+        
 
         $user = User::where('email', $request->email)->first();
 
@@ -130,5 +130,26 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Successfully logged out.'
         ], 200);
+    }
+
+   /**
+     * @OA\Get(
+     *     path="/api/user",
+     *     summary="Récupérer les informations de l'utilisateur connecté",
+     *     tags={"Auth"},
+     *     security={{ "bearerAuth":{} }},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Utilisateur récupéré avec succès",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="user", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Non authentifié")
+     * )
+     */
+    public function user()
+    {
+        return Auth::user();
     }
 }
