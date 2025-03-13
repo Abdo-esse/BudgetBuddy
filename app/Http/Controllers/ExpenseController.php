@@ -6,8 +6,6 @@ use App\Models\Expense;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use App\Http\Requests\ExpenseRequest;
-use App\Http\Requests\StoreExpenseRequest;
-use App\Http\Requests\UpdateExpenseRequest;
 use Illuminate\Http\Request;
 
 class ExpenseController extends Controller
@@ -46,7 +44,6 @@ class ExpenseController extends Controller
      */
     public function store(ExpenseRequest $request)
     {
-        
         $fields = $request->validated();
         $expense = $request->user()->expenses()->create($fields);
         return response()->json([ 'message' => 'Expense créé avec succès'], 201);
@@ -136,19 +133,55 @@ class ExpenseController extends Controller
         return response()->json(['message' => 'Expense a été supprimé avec succès'], 200);
     }
 
-    public function attachTags(Request $request,  $expenseId)
+    /**
+     * @OA\Post(
+     *     path="/api/expenses/{expenseId}/tags",
+     *     summary="Attach tags to an expense",
+     *     tags={"Expenses"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="expenseId",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="tags", type="array", items=@OA\Items(type="integer"))
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Tags successfully attached to the expense",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Tags associés avec succès")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Expense not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="error", type="string", example="Expense non trouvé")
+     *         )
+     *     )
+     * )
+     */
+    public function attachTags(Request $request, $expenseId)
     {
-    $expense = Expense::find($expenseId);
+        $expense = Expense::find($expenseId);
 
-    if (!$expense) {
-        return response()->json(['error' => 'Expense non trouvé'], 404);
-    }
+        if (!$expense) {
+            return response()->json(['error' => 'Expense non trouvé'], 404);
+        }
+
         $validated = $request->validate([
             'tags' => 'required|array',
             'tags.*' => 'exists:tags,id'
         ]);
+
         $expense->tags()->syncWithoutDetaching($validated['tags']);
-    
+
         return response()->json(['message' => 'Tags associés avec succès'], 200);
     }
 }
