@@ -34,34 +34,38 @@ class TagController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Tag  $tags
+     * @param  \App\Models\Tag  $tag
      * @return \Illuminate\Http\Response
      */
-    public function show(Tag $tags)
+    public function show(Tag $tag)
     {
-        return response()->json($tags, 200);
+        return response()->json($tag, 200);
     }
 
     /**
      * Update the specified resource in storage.
      *
      * @param  \App\Http\Requests\TagRequest  $request
-     * @param  \App\Models\Tag  $tags
+     * @param  \App\Models\Tag  $tag
      * @return \Illuminate\Http\Response
      */
-    public function update(TagRequest $request, Tag $tags)
+    public function update(TagRequest $request, Tag $tag)
     {
-        //
+        $fields = $request->validated();
+        $tag->update($fields);
+
+        return response()->json(['tag' => $tag, 'message' => 'tag mis à jour avec succès'], 200);
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Tags  $tags
+     * @param  \App\Models\Tag $tag
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Tags $tags)
+    public function destroy(Tag $tag)
     {
-        //
+        $tag->delete();
+        return response()->json(['message' => 'Le tag a été supprimé avec succès'], 200);
     }
 }
