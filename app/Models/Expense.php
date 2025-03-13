@@ -20,4 +20,9 @@ class Expense extends Model
         'currency',
         'description',
     ];
+
+    public function user()
+    {
+        return $this->belongsto(User::class);
+    }
 }
