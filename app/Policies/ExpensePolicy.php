@@ -10,9 +10,9 @@ class ExpensePolicy
 {
     use HandlesAuthorization;
 
-    public function modify(User $user,Post $post): Response
+    public function modify(User $user,Expense $expense): Response
     {
-        return $user->id=== $post->user_id
+        return $user->id=== $expense->user_id
         ? Response::allow()
         : Response::deny('You do own this post');
     }

@@ -39,7 +39,7 @@ class ExpenseController extends Controller
      */
     public function show(Expense $expense)
     {
-        //
+        return response()->json($expense, 200);
     }
 
     /**
@@ -49,9 +49,13 @@ class ExpenseController extends Controller
      * @param  \App\Models\Expense  $expense
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateExpenseRequest $request, Expense $expense)
+    public function update(ExpenseRequest $request, Expense $expense)
     {
-        //
+        Gate::authorize('modify', $expense);
+
+        $expense->update($request);
+
+        return response()->json(['message' => 'Expense mis à jour avec succès'], 200);
     }
 
     /**
@@ -62,6 +66,9 @@ class ExpenseController extends Controller
      */
     public function destroy(Expense $expense)
     {
-        //
+        Gate::authorize('modify', $expense);
+        $expense->delete();
+
+        return response()->json(['message' => 'Expense a été supprimé avec succès'], 200);
     }
 }
