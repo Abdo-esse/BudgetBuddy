@@ -15,7 +15,7 @@ class ExpenseController extends Controller
      */
     public function index()
     {
-        //
+       return response()->json(Auth::user()->expenses()->get(), 200);
     }
 
     /**
@@ -24,9 +24,11 @@ class ExpenseController extends Controller
      * @param  \App\Http\Requests\StoreExpenseRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreExpenseRequest $request)
+    public function store(ExpenseRequest $request)
     {
-        //
+        $expense = $request->user()->expenses()->create($request);
+
+        return response()->json([ 'message' => 'Expense créé avec succès'], 201);
     }
 
     /**
