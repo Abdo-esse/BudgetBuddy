@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Gate;
 use App\Http\Requests\ExpenseRequest;
 use App\Http\Requests\StoreExpenseRequest;
 use App\Http\Requests\UpdateExpenseRequest;
+use Illuminate\Http\Request;
 
 class ExpenseController extends Controller
 {
@@ -25,7 +26,7 @@ class ExpenseController extends Controller
      */
     public function index()
     {
-       return response()->json(Auth::user()->expenses()->get(), 200);
+        return response()->json(Auth::user()->expenses()->with('tags')->get(), 200);
     }
 
     /**
@@ -47,10 +48,7 @@ class ExpenseController extends Controller
     {
         
         $fields = $request->validated();
-        $expense = $request->user()->expenses()->create($fields->only(['amount', 'currency', 'description']));
-        if ($fields->has('tags')) {
-            $expense->tags()->attach($fields->tags);
-        }
+        $expense = $request->user()->expenses()->create($fields);
         return response()->json([ 'message' => 'Expense créé avec succès'], 201);
     }
 
@@ -136,5 +134,21 @@ class ExpenseController extends Controller
         Gate::authorize('modify', $expense);
         $expense->delete();
         return response()->json(['message' => 'Expense a été supprimé avec succès'], 200);
+    }
+
+    public function attachTags(Request $request,  $expenseId)
+    {
+    $expense = Expense::find($expenseId);
+
+    if (!$expense) {
+        return response()->json(['error' => 'Expense non trouvé'], 404);
+    }
+        $validated = $request->validate([
+            'tags' => 'required|array',
+            'tags.*' => 'exists:tags,id'
+        ]);
+        $expense->tags()->syncWithoutDetaching($validated['tags']);
+    
+        return response()->json(['message' => 'Tags associés avec succès'], 200);
     }
 }
