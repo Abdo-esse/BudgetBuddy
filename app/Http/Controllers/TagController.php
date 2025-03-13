@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Tags;
+use App\Models\Tag;
 use App\Http\Requests\StoreTagsRequest;
 use App\Http\Requests\UpdateTagsRequest;
 
-class TagsController extends Controller
+class TagController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -15,16 +15,16 @@ class TagsController extends Controller
      */
     public function index()
     {
-        //
+        return response()->json(Tag::all());
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \App\Http\Requests\StoreTagsRequest  $request
+     * @param  \App\Http\Requests\TagRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreTagsRequest $request)
+    public function store(TagRequest $request)
     {
         //
     }
@@ -43,11 +43,11 @@ class TagsController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \App\Http\Requests\UpdateTagsRequest  $request
+     * @param  \App\Http\Requests\TagRequest  $request
      * @param  \App\Models\Tags  $tags
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateTagsRequest $request, Tags $tags)
+    public function update(TagRequest $request, Tags $tags)
     {
         //
     }
