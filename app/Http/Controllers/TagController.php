@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tag;
+use App\Http\Requests\TagRequest;
 use App\Http\Requests\StoreTagsRequest;
 use App\Http\Requests\UpdateTagsRequest;
 
@@ -27,10 +28,10 @@ class TagController extends Controller
     public function store(TagRequest $request)
     {
         $fields = $request->validated();
-        $tag= Tag::create($fields->only('title'));
-        return response()->json([ 'message' => 'Tag créé avec succès'], 201);
+        $tag = Tag::create(['title' => $fields['title']]); 
+    
+        return response()->json(['message' => 'Tag créé avec succès', 'tag' => $tag], 201);
     }
-
     /**
      * Display the specified resource.
      *

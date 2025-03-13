@@ -25,4 +25,9 @@ class Expense extends Model
     {
         return $this->belongsto(User::class);
     }
+
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class, 'expense_tag');
+    }
 }

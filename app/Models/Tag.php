@@ -17,4 +17,9 @@ class Tag extends Model
     protected $fillable = [
         'title'
     ];
+
+    public function expenses()
+    {
+        return $this->belongsToMany(Expense::class, 'expense_tag');
+    }
 }

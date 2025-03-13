@@ -45,8 +45,12 @@ class ExpenseController extends Controller
      */
     public function store(ExpenseRequest $request)
     {
+        
         $fields = $request->validated();
-        $expense = $request->user()->expenses()->create($fields);
+        $expense = $request->user()->expenses()->create($fields->only(['amount', 'currency', 'description']));
+        if ($fields->has('tags')) {
+            $expense->tags()->attach($fields->tags);
+        }
         return response()->json([ 'message' => 'Expense créé avec succès'], 201);
     }
 
