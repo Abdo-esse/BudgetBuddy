@@ -15,6 +15,11 @@ return new class extends Migration
     {
         Schema::create('expenses', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('title');
+            $table->decimal('amount', 10, 2);
+            $table->string('currency', 3)->default('USD');
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }

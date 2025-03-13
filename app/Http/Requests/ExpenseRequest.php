@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreExpenseRequest extends FormRequest
+class ExpenseRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -13,7 +13,7 @@ class StoreExpenseRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -24,7 +24,10 @@ class StoreExpenseRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+            'title'=>'required|string',
+            'amount' => 'required|numeric|min:0.01', 
+            'currency' => 'required|string|size:3', 
+             'description' => 'nullable|string|max:255',
         ];
     }
 }
