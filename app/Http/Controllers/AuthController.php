@@ -4,9 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use App\Http\Requests\AuthRequest;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\JsonResponse;
 
 /**
  * @OA\Tag(
@@ -43,15 +42,12 @@ class AuthController extends Controller
      *     @OA\Response(response=400, description="Validation error"),
      * )
      */
-    public function register(AuthRequest $request): JsonResponse
+    public function register(Request $request): JsonResponse
     {
-        $fields = $request->validate([
-        ]);
-
-        $user = User::create([
-            'name' => $fields['name'],
-            'email' => $fields['email'],
-            'password' => Hash::make($fields['password']),
+         $user = User::create([
+            'name' => $request['name'],
+            'email' => $request['email'],
+            'password' => Hash::make($request['password']),
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -88,16 +84,22 @@ class AuthController extends Controller
      *     @OA\Response(response=401, description="Identifiants invalides"),
      * )
      */
-    public function login(LoginRequest $request): JsonResponse
+    public function login(Request $request): JsonResponse
     {
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'password' => 'required|string'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message' => 'Invalid Credentials'
-            ], Response::HTTP_UNAUTHORIZED);
+                'message' => 'Invalid credentials.'
+            ], 401);
         }
-        $user = Auth::user();
-        $tokenResult = $user->createToken('Token')->plainTextToken;
-        $cookie = cookie('jwt', $tokenResult, 60 * 24);
+
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'message' => 'Login successful.',
@@ -124,9 +126,9 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         $request->user()->tokens()->delete();
-        $cookie = Cookie::forget('jwt');
+
         return response()->json([
             'message' => 'Successfully logged out.'
-        ], 200)->withCookie($cookie);
+        ], 200);
     }
 }
