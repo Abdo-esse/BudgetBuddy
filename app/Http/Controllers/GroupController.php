@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Group;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use App\Http\Resources\GroupResource;
 use App\Http\Requests\StoreGroupRequest;
 use App\Http\Requests\UpdateGroupRequest;
@@ -43,7 +44,7 @@ class GroupController extends Controller
 
         return response()->json([
             'message' => 'Groupe créé avec succès !',
-            'group' => $group->load('users'), 
+            'group' => new GroupResource($group), 
         ], 201); 
     }
 
@@ -55,7 +56,9 @@ class GroupController extends Controller
      */
     public function show(Group $group)
     {
-        //
+        Gate::authorize('viewAny', $group); // Vérifie si l'utilisateur a accès
+
+        return new GroupResource($group->load('users'));
     }
 
     /**

@@ -27,7 +27,7 @@ Route::middleware('auth:sanctum')->group(function() {
     Route::post('logout', [AuthController::class, 'logout']); 
     Route::post('/expenses/{expense}/tags', [ExpenseController::class, 'attachTags']); 
     Route::apiResource('expenses', ExpenseController::class);
-    Route::apiResource('groups ', GroupController::class);
+    Route::apiResource('groups', GroupController::class);
 });
 
 Route::apiResource('tags', TagController::class);
