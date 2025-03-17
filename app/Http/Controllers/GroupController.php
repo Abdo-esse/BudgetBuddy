@@ -24,9 +24,23 @@ class GroupController extends Controller
      * @param  \App\Http\Requests\StoreGroupRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreGroupRequest $request)
+    public function store(GroupStoreRequest $request): JsonResponse
     {
-        //
+        $user = Auth::user(); 
+        
+        $group = Group::create([
+            'name' => $request->name,
+            'devise' => $request->currency,
+        ]);
+        
+        $members = $request->members ?? [];
+        $members[] = $user->id;
+        $group->users()->attach(array_unique($members));
+
+        return response()->json([
+            'message' => 'Groupe créé avec succès !',
+            'group' => $group->load('users'), 
+        ], 201);
     }
 
     /**

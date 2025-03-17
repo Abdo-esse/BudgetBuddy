@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\GroupController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\api\HomeController;
 
@@ -26,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function() {
     Route::post('logout', [AuthController::class, 'logout']); 
     Route::post('/expenses/{expense}/tags', [ExpenseController::class, 'attachTags']); 
     Route::apiResource('expenses', ExpenseController::class);
+    Route::apiResource('groups ', GroupController::class);
 });
 
 Route::apiResource('tags', TagController::class);
