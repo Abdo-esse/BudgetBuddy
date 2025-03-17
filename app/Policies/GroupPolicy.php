@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Group;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class GroupPolicy
@@ -17,11 +16,9 @@ class GroupPolicy
      * @param  \App\Models\User  $user
      * @return \Illuminate\Auth\Access\Response|bool
      */
-    public function viewAny(User $user, Group $group)
+    public function viewAny(User $user)
     {
-        return $group->users()->where('user_id', $user->id)->exists()
-        ? Response::allow()
-        : Response::deny('Vous ne faites pas partie de ce groupe.');
+        //
     }
 
     /**
@@ -33,7 +30,9 @@ class GroupPolicy
      */
     public function view(User $user, Group $group)
     {
-        //
+        return $group->users()->where('user_id', $user->id)->exists()
+        ? Response::allow()
+        : Response::deny('Vous ne faites pas partie de ce groupe.');
     }
 
     /**

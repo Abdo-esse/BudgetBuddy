@@ -56,21 +56,9 @@ class GroupController extends Controller
      */
     public function show(Group $group)
     {
-        Gate::authorize('viewAny', $group); // Vérifie si l'utilisateur a accès
+        Gate::authorize('view', $group); 
 
         return new GroupResource($group->load('users'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \App\Http\Requests\UpdateGroupRequest  $request
-     * @param  \App\Models\Group  $group
-     * @return \Illuminate\Http\Response
-     */
-    public function update(UpdateGroupRequest $request, Group $group)
-    {
-        //
     }
 
     /**
