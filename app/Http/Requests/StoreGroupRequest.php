@@ -24,10 +24,10 @@ class StoreGroupRequest extends FormRequest
     public function rules()
     {
         return [
-            'name' => 'required|string|max:255|unique:groups,name',
-            'currency' => 'required|string|size:3', 
-            'members' => 'nullable|array|min:1', 
-            'members.*' => 'exists:users,id|not_in:' . auth()->id(), 
+            'name' => 'required|string|max:255',
+            'devise' => 'required|string|size:3',
+            'members' => 'nullable|array|min:1',
+            'members.*' => 'exists:users,id|not_in:' . auth()->id(), // éviter que l'utilisateur ne se mette lui-même dans le groupe
         ];
     }
 
@@ -36,8 +36,8 @@ class StoreGroupRequest extends FormRequest
         return [
             'name.required' => 'Le nom du groupe est obligatoire.',
             'name.unique' => 'Ce nom de groupe existe déjà.',
-            'currency.required' => 'Veuillez spécifier la devise.',
-            'currency.size' => 'La devise doit être un code de 3 lettres (ex: EUR, USD).',
+            'devise.required' => 'Veuillez spécifier la devise.',
+            'devise.size' => 'La devise doit être un code de 3 lettres (ex: EUR, USD).',
             'members.required' => 'Vous devez ajouter au moins un membre.',
             'members.*.exists' => 'Certains membres n\'existent pas.',
         ];

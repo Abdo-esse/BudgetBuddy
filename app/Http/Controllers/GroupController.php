@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Group;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\StoreGroupRequest;
 use App\Http\Requests\UpdateGroupRequest;
 
@@ -15,7 +16,8 @@ class GroupController extends Controller
      */
     public function index()
     {
-        //
+        $groups = Auth::user()->groups()->with('users')->get();
+        return response()->json($groups, 200);
     }
 
     /**
@@ -24,23 +26,24 @@ class GroupController extends Controller
      * @param  \App\Http\Requests\StoreGroupRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(GroupStoreRequest $request): JsonResponse
+    public function store(StoreGroupRequest $request)
     {
-        $user = Auth::user(); 
+        $user = Auth::user();
         
         $group = Group::create([
             'name' => $request->name,
-            'devise' => $request->currency,
+            'devise' => $request->devise,
         ]);
-        
+
         $members = $request->members ?? [];
         $members[] = $user->id;
+        
         $group->users()->attach(array_unique($members));
 
         return response()->json([
             'message' => 'Groupe créé avec succès !',
             'group' => $group->load('users'), 
-        ], 201);
+        ], 201); 
     }
 
     /**
