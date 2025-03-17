@@ -8,4 +8,16 @@ use Illuminate\Database\Eloquent\Model;
 class Group extends Model
 {
     use HasFactory;
+
+
+    protected $fillable = [
+        'name',
+        'devise',
+    ];
+
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class);
+    }
 }
