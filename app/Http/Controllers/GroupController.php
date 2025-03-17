@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Group;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\GroupResource;
 use App\Http\Requests\StoreGroupRequest;
 use App\Http\Requests\UpdateGroupRequest;
 
@@ -17,7 +18,7 @@ class GroupController extends Controller
     public function index()
     {
         $groups = Auth::user()->groups()->with('users')->get();
-        return response()->json($groups, 200);
+        return GroupResource::collection($groups);
     }
 
     /**
