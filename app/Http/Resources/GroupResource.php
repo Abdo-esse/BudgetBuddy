@@ -18,6 +18,7 @@ class GroupResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'devise' => $this->devise,
+            'solde'=>$this->solde,
             'created_at' => $this->created_at->toDateTimeString(),
             'users' => $this->users->map(function ($user) {
                 return [

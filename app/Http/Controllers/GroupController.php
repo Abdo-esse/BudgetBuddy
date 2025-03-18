@@ -70,7 +70,11 @@ class GroupController extends Controller
     public function destroy(Group $group)
     {
         Gate::authorize('view', $group);
+        if($group->solde != 0){
+            return response()->json(['message' => "Suppression impossible : votre solde est de {$group->solde}"], 400);
+        }
         $group->delete();
         return response()->json(['message' => 'Group a été supprimé avec succès'], 200);
+        
     }
 }
