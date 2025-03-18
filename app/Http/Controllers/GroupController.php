@@ -35,6 +35,7 @@ class GroupController extends Controller
         $group = Group::create([
             'name' => $request->name,
             'devise' => $request->devise,
+            'solde'=>$request->solde,
         ]);
 
         $members = $request->members ?? [];
@@ -71,7 +72,7 @@ class GroupController extends Controller
     {
         Gate::authorize('view', $group);
         if($group->solde != 0){
-            return response()->json(['message' => "Suppression impossible : votre solde est de {$group->solde}"], 400);
+            return response()->json(['message' => "Suppression impossible : votre solde est de $group->solde"], 400);
         }
         $group->delete();
         return response()->json(['message' => 'Group a été supprimé avec succès'], 200);
