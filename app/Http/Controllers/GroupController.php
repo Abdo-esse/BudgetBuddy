@@ -69,6 +69,8 @@ class GroupController extends Controller
      */
     public function destroy(Group $group)
     {
-        //
+        Gate::authorize('view', $group);
+        $group->delete();
+        return response()->json(['message' => 'Group a été supprimé avec succès'], 200);
     }
 }

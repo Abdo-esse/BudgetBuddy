@@ -2,11 +2,12 @@
 
 namespace App\Providers;
 
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use App\Models\Group;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 
 class RouteServiceProvider extends ServiceProvider
 {
@@ -26,6 +27,11 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        parent::boot(); 
+
+    Route::bind('group', function ($value) {
+        return Group::find($value) ?? throw new ModelNotFoundException('Group non trouvé');
+    });
         $this->configureRateLimiting();
 
         $this->routes(function () {
