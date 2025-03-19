@@ -13,13 +13,13 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('expenses_groups', function (Blueprint $table) {
+        Schema::create('expenses_users', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('group_id')->constrained()->onDelete('cascade');
-            $table->string('title');
-            $table->decimal('total_prix', 10, 2);
-            $table->text('description')->nullable();
-            $table->enum('methode_division', ['égal', 'pourcentage']);
+            $table->foreignId('expense_group_id')->constrained('expenses_groups'); 
+            $table->foreignId('user_id')->constrained(); 
+            $table->decimal('montant_contribution', 10, 2); 
+            $table->boolean('is_payer')->default(false); 
+            $table->decimal('pourcentage', 5, 2)->nullable();
             $table->timestamps();
         });
     }
@@ -31,6 +31,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('expenses_groups');
+        Schema::dropIfExists('expenses_users');
     }
 };
