@@ -24,7 +24,6 @@ class StoreExpenseGroupRequest extends FormRequest
     public function rules()
     {
         return [
-            'expense_group.group_id' => 'required|exists:groups,id',
             'expense_group.title' => 'required|string|max:255',
             'expense_group.total_prix' => 'required|numeric',
             'expense_group.description' => 'required|string',
