@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Group;
 use App\Models\ExpenseGroup;
 use App\Http\Requests\StoreExpenseGroupRequest;
 use App\Http\Requests\UpdateExpenseGroupRequest;

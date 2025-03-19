@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\api\HomeController;
+use App\Http\Controllers\ExpenseGroupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,6 +29,7 @@ Route::middleware('auth:sanctum')->group(function() {
     Route::post('/expenses/{expense}/tags', [ExpenseController::class, 'attachTags']); 
     Route::apiResource('expenses', ExpenseController::class);
     Route::apiResource('groups', GroupController::class);
+    Route::post('groups/{group}/expenses', [ExpenseGroupController::class, 'store']); 
 });
 
 Route::apiResource('tags', TagController::class);
