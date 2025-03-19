@@ -27,8 +27,16 @@ class ExpenseGroupController extends Controller
      */
     public function store(StoreExpenseGroupRequest $request,$group_id)
     {
-        $validated = $request->validate();
-        $group = Group::findOrFail($group_id);
+        
+        $validated = $request->validated();
+        
+        $group = Group::find($group_id);
+        if (!$group) {
+            return response()->json([
+                'error' => 'Le groupe spécifié est introuvable.',
+            ], 404);
+        }
+        // dd($group_id);
         $expenseGroup = ExpenseGroup::create([
             'group_id' => $group_id,
             'title' => $validated['expense_group']['title'],

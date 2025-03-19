@@ -29,7 +29,7 @@ class StoreExpenseGroupRequest extends FormRequest
             'expense_group.description' => 'required|string',
             'expense_group.methode_division' => 'required|in:égal,pourcentage',
             'expenses_users.*.user_id' => 'required|exists:users,id',
-            'expenses_users.*.montant_contribution' => 'required|numeric',
+            'expenses_users.*.montant_contribution' => 'nullable|numeric',
             'expenses_users.*.is_payer' => 'required|boolean',
             'expenses_users.*.pourcentage' => 'nullable|numeric|min:0|max:100',
         ];
