@@ -13,7 +13,7 @@ class StoreExpenseGroupRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -24,7 +24,15 @@ class StoreExpenseGroupRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+            'expense_group.group_id' => 'required|exists:groups,id',
+            'expense_group.title' => 'required|string|max:255',
+            'expense_group.total_prix' => 'required|numeric',
+            'expense_group.description' => 'required|string',
+            'expense_group.methode_division' => 'required|in:égal,pourcentage',
+            'expenses_users.*.user_id' => 'required|exists:users,id',
+            'expenses_users.*.montant_contribution' => 'required|numeric',
+            'expenses_users.*.is_payer' => 'required|boolean',
+            'expenses_users.*.pourcentage' => 'nullable|numeric|min:0|max:100',
         ];
     }
 }
