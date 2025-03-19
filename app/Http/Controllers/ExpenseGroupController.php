@@ -38,7 +38,7 @@ class ExpenseGroupController extends Controller
         }
         // dd($group_id);
         $expenseGroup = ExpenseGroup::create([
-            'group_id' => $group_id,
+            'group_id' => $group_id->id,
             'title' => $validated['expense_group']['title'],
             'total_prix' => $validated['expense_group']['total_prix'],
             'description' => $validated['expense_group']['description'],
