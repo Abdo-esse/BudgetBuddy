@@ -51,4 +51,9 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Group::class);
     }
+
+    public function expensesGroup()
+    {
+        return $this->belongsToMany(ExpenseGroup::class, 'expenses_users')->withPivot('montant_contribution', 'is_payer', 'pourcentage');
+    }
 }
