@@ -26,4 +26,9 @@ class Group extends Model
     {
         return $this->hasMany(ExpenseGroup::class);
     }
+
+    public static function validateGroup($group_id)
+    {
+        return self::find($group_id);
+    }
 }
