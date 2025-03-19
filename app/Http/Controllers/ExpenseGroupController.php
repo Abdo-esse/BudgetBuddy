@@ -26,13 +26,8 @@ class ExpenseGroupController extends Controller
      */
     public function store(StoreExpenseGroupRequest $request,$group_id)
     {
-        // Validation des données entrantes
         $validated = $request->validate();
-    
-        // Vérification que le groupe existe
         $group = Group::findOrFail($group_id);
-    
-        // Récupérer les données de la dépense
         $expenseGroup = ExpenseGroup::create([
             'group_id' => $group_id,
             'title' => $validated['expense_group']['title'],
@@ -40,23 +35,23 @@ class ExpenseGroupController extends Controller
             'description' => $validated['expense_group']['description'],
             'methode_division' => $validated['expense_group']['methode_division'],
         ]);
-    
-        // Si la méthode de division est "égal", on ne vérifie pas que tout le monde paye également
+
         if ($validated['expense_group']['methode_division'] == 'égal') {
             $payers = array_filter($validated['expenses_users'], fn($user) => $user['is_payer'] == true);
-    
-            // Cas où un seul utilisateur paie tout
             if (count($payers) == 1) {
-                // Dans ce cas, on ne vérifie pas les montants, car une seule personne paye tout
                 $payer = reset($payers);
-                // La contribution de l'utilisateur qui paie sera égale à tout le total
-                $payer['montant_contribution'] = $validated['expense_group']['total_prix'];
+                
+                
+                if ( $payer['montant_contribution'] !== $validated['expense_group']['total_prix']) {
+                    return response()->json([
+                        'error' => 'Le montant_contribution doit être égale au montant total de la dépense.',
+                    ], 400);
+                }
                 $validated['expenses_users'] = [$payer];
+
             } else {
-                // Si plusieurs utilisateurs payent, la somme des contributions doit être égale au montant total
                 $totalContributions = array_sum(array_column($validated['expenses_users'], 'montant_contribution'));
             
-                // Vérification que la somme des contributions correspond au montant total
                 if ($totalContributions !== $validated['expense_group']['total_prix']) {
                     return response()->json([
                         'error' => 'La somme des contributions des utilisateurs doit être égale au montant total de la dépense.',
@@ -78,14 +73,16 @@ class ExpenseGroupController extends Controller
                     'error' => 'La somme des pourcentages doit être égale à 100%.',
                 ], 400);
             }
+            $totalContributions = array_sum(array_column($validated['expenses_users'], 'montant_contribution'));
+            
+                if ($totalContributions !== $validated['expense_group']['total_prix']) {
+                    return response()->json([
+                        'error' => 'La somme des contributions des utilisateurs doit être égale au montant total de la dépense.',
+                    ], 400);
+                }
     
-            // Calcul des contributions basées sur les pourcentages
-            foreach ($validated['expenses_users'] as $userExpense) {
-                $userExpense['montant_contribution'] = ($userExpense['pourcentage'] / 100) * $validated['expense_group']['total_prix'];
-            }
+            
         }
-    
-        // Enregistrement des utilisateurs et de leurs contributions
         foreach ($validated['expenses_users'] as $userExpense) {
             $expenseGroup->users()->attach(
                 $userExpense['user_id'],
