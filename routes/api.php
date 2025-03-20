@@ -30,6 +30,7 @@ Route::middleware('auth:sanctum')->group(function() {
     Route::apiResource('expenses', ExpenseController::class);
     Route::apiResource('groups', GroupController::class);
     Route::post('groups/{group}/expenses', [ExpenseGroupController::class, 'store']); 
+    Route::get('groups/{group}/expenses', [ExpenseGroupController::class, 'index']); 
 });
 
 Route::apiResource('tags', TagController::class);
