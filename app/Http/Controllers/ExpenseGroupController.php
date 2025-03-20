@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Group;
 use App\Models\ExpenseGroup;
+use App\Http\Resources\ExpenseGroupResource;
 use App\Http\Requests\StoreExpenseGroupRequest;
 use App\Http\Requests\UpdateExpenseGroupRequest;
 
@@ -36,33 +37,7 @@ class ExpenseGroupController extends Controller
         ], 404);
     }
 
-    // Préparer la réponse avec les dépenses et les utilisateurs associés
-    $response = [];
-
-    foreach ($expenseGroups as $expenseGroup) {
-        $groupData = [
-            'expense_group' => [
-                'title' => $expenseGroup->title,
-                'total_prix' => $expenseGroup->total_prix,
-                'description' => $expenseGroup->description,
-                'methode_division' => $expenseGroup->methode_division,
-            ],
-            'expenses_users' => []
-        ];
-
-        // Ajouter les utilisateurs associés à chaque dépense
-        foreach ($expenseGroup->users as $user) {
-            $groupData['expenses_users'][] = [
-                'user_id' => $user->id,
-                'montant_contribution' => $user->pivot->montant_contribution ?? null,
-                'is_payer' => $user->pivot->is_payer,
-            ];
-        }
-
-        $response[] = $groupData;
-    }
-
-    return response()->json($response);
+    return ExpenseGroupResource::collection($expenseGroups);
     }
 
     /**
