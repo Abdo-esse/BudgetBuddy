@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\Group;
 use App\Models\ExpenseGroup;
+use Illuminate\Support\Facades\DB;
 use App\Http\Resources\ExpenseGroupResource;
 use App\Http\Requests\StoreExpenseGroupRequest;
 use App\Http\Requests\UpdateExpenseGroupRequest;
@@ -17,20 +19,16 @@ class ExpenseGroupController extends Controller
      */
     public function index($group_id)
     {
-      // Récupérer le groupe par ID
     $group = Group::find($group_id);
 
-    // Vérifier si le groupe existe
     if (!$group) {
         return response()->json([
             'error' => 'Le groupe spécifié est introuvable.',
         ], 404);
     }
 
-    // Récupérer toutes les dépenses associées à ce groupe
     $expenseGroups = ExpenseGroup::where('group_id', $group_id->id)->with('users')->get();
 
-    // Vérifier si des dépenses sont trouvées
     if ($expenseGroups->isEmpty()) {
         return response()->json([
             'error' => 'Aucune dépense trouvée pour ce groupe.',
@@ -101,4 +99,44 @@ class ExpenseGroupController extends Controller
     {
         //
     }
+
+    public function balances($group_id)
+    {
+    $group = Group::find($group_id);
+
+    if (!$group) {
+        return response()->json([
+            'error' => 'Le groupe spécifié est introuvable.',
+        ], 404);
+    }
+
+    $expenseGroups = ExpenseGroup::where('group_id', $group_id->id)->with('users')->get();
+
+    if ($expenseGroups->isEmpty()) {
+        return response()->json([
+            'error' => 'Aucune dépense trouvée pour ce groupe.',
+        ], 404);
+    }
+                
+            $totalPrise = $expenseGroups->sum('total_prix');
+
+            
+            $groups = $group->load('users');
+
+            
+            $nusers = $groups->sum(function($group) {
+                return $group->users->count();  
+            });
+            $dettes=$nusers > 0 ? $totalPrise / $nusers : 0;
+            $results = DB::table('users as u')
+                ->join('group_user as gu', 'u.id', '=', 'gu.user_id')
+                ->join('expenses_users as eu', 'u.id', '=', 'eu.user_id')
+                ->where('gu.group_id', 4)
+                ->select('u.*', 'gu.*', 'eu.*')
+                ->get();
+
+            return response()->json([
+                'data' => $results ,  
+            ], 200);
+                }
 }
