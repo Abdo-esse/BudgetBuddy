@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Group;
+use App\Models\ExpenseUser;
 use App\Models\ExpenseGroup;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\ExpenseGroupResource;
@@ -102,41 +103,63 @@ class ExpenseGroupController extends Controller
 
     public function balances($group_id)
     {
-    $group = Group::find($group_id);
+            $group = Group::find($group_id);
 
-    if (!$group) {
-        return response()->json([
-            'error' => 'Le groupe spécifié est introuvable.',
-        ], 404);
-    }
+            if (!$group) {
+                return response()->json([
+                    'error' => 'Le groupe spécifié est introuvable.',
+                ], 404);
+            }
 
-    $expenseGroups = ExpenseGroup::where('group_id', $group_id->id)->with('users')->get();
-
-    if ($expenseGroups->isEmpty()) {
-        return response()->json([
-            'error' => 'Aucune dépense trouvée pour ce groupe.',
-        ], 404);
-    }
-                
-            $totalPrise = $expenseGroups->sum('total_prix');
-
-            
+            $expenseGroups = ExpenseGroup::where('group_id', $group_id->id)
+            ->with('users')->get();
             $groups = $group->load('users');
-
             
+            if ($expenseGroups->isEmpty()) {
+                return response()->json([
+                    'error' => 'Aucune dépense trouvée pour ce groupe.',
+                ], 404);
+            }
+                        
+            $totalPrise = $expenseGroups->sum('total_prix');
             $nusers = $groups->sum(function($group) {
                 return $group->users->count();  
             });
-            $dettes=$nusers > 0 ? $totalPrise / $nusers : 0;
-            $results = DB::table('users as u')
+            $AmontTotal_Contribution = DB::table('users as u')
                 ->join('group_user as gu', 'u.id', '=', 'gu.user_id')
                 ->join('expenses_users as eu', 'u.id', '=', 'eu.user_id')
-                ->where('gu.group_id', 4)
-                ->select('u.*', 'gu.*', 'eu.*')
+                ->select('u.name', DB::raw('SUM(eu.montant_contribution) as total_contribution'))
+                ->where('gu.group_id', $group_id->id)
+                ->groupBy('u.id', 'u.name') 
                 ->get();
 
+                $dettes= $nusers > 0 ? $totalPrise / $nusers : 0;
+            $newli = [];
+
+            foreach ($groups[0]->users as $user) {
+                $newli[$user->name] = $this->CalculateAmount($user , round($dettes,2) , $AmontTotal_Contribution);
+            }
+
             return response()->json([
-                'data' => $results ,  
+                $newli ,  
+                "dettes" => round($dettes,2)
             ], 200);
+    }
+    public function CalculateAmount($user , ?float $account_per_person ,$AmontTotal_Contribution) {
+        foreach ($AmontTotal_Contribution as $person ) {
+            if($user->name == $person->name){
+                if($person->total_contribution > $account_per_person){
+                    return "+" . $person->total_contribution - $account_per_person;
+                }else if($person->total_contribution == $account_per_person){
+                    return "rigilo" . $person->total_contribution - $account_per_person;
+                }else{
+                    return "You mush pay " . $person->total_contribution - $account_per_person;
                 }
+            }
+        }
+        return "-" . $account_per_person;
+    }
 }
+    
+    
+
