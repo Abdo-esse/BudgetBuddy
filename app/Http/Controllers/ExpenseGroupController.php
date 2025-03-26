@@ -101,66 +101,109 @@ class ExpenseGroupController extends Controller
         //
     }
 
-    public function balances($group_id)
+    public function balances($group)
     {
-        $group = Group::find($group_id->id);
+        $group = $this->getGroupById($group->id);
+        if (!$group) return $this->errorResponse('Le groupe spécifié est introuvable.', 404);
     
-        if (!$group) {
-            return response()->json([
-                'error' => 'Le groupe spécifié est introuvable.',
-            ], 404);
-        }
-    
-        $expenseGroups = ExpenseGroup::where('group_id', $group_id->id)
-            ->with('users')->get();
-    
-        if ($expenseGroups->isEmpty()) {
-            return response()->json([
-                'error' => 'Aucune dépense trouvée pour ce groupe.',
-            ], 404);
-        }
+        $expenseGroups = $this->getExpenseGroups($group->id);
+        if ($expenseGroups->isEmpty()) return $this->errorResponse('Aucune dépense trouvée pour ce groupe.', 404);
     
         $totalPrise = $expenseGroups->sum('total_prix');
-        // return $totalPrise;
-        $nusers = $group->users->count();
-    
-        $AmontTotal_Contribution = DB::table('users as u')
-        ->join('expenses_users as eu', 'u.id', '=', 'eu.user_id')
-        ->join('expenses_groups as eg', 'eu.expense_group_id', '=', 'eg.id')
-        ->where('eg.group_id', $group_id->id)
-        ->groupBy('u.id', 'u.name')
-        ->select('u.id', 'u.name', DB::raw('SUM(eu.montant_contribution) AS total_contribution'))
-        ->get();
-    
-        $dettes = $nusers > 0 ? $totalPrise / $nusers : 0;
-        $newli = [];
-    
-        foreach ($group->users as $user) {
-            $newli[$user->name] = $this->CalculateAmount($user, round($dettes, 2), $AmontTotal_Contribution);
-        }
+        $AmontTotal_Contribution = $this->calculateTotalContribution($group->id);
+        $balances = $this->calculateBalances($group, $totalPrise, $AmontTotal_Contribution);
+        $transactions = $this->optimizeTransactions($balances);
     
         return response()->json([
-            'balances' => $newli,
-            'dettes' => round($dettes, 2)
+            'transactions' => $transactions,
+            'balances' => $balances
         ], 200);
     }
     
-    public function CalculateAmount($user, ?float $account_per_person, $AmontTotal_Contribution)
+    /** 🔹 Récupère le groupe ou retourne null si non trouvé */
+    private function getGroupById($group_id)
     {
-        foreach ($AmontTotal_Contribution as $person) {
-            if ($user->name == $person->name) {
-                $difference = round($account_per_person - $person->total_contribution, 2);
-                if ($difference > 0) {
-                    return "+" . $difference ;
-                } elseif ($difference == 0) {
-                    return "Équilibré";
-                } else {
-                    return "vous ete besoin " . abs($difference) ;
-                }
+        return Group::find($group_id);
+    }
+    
+    /** 🔹 Récupère les dépenses du groupe */
+    private function getExpenseGroups($group_id)
+    {
+        return ExpenseGroup::where('group_id', $group_id)->with('users')->get();
+    }
+    
+    /** 🔹 Calcule la contribution totale de chaque utilisateur */
+    private function calculateTotalContribution($group_id)
+    {
+        return DB::table('users as u')
+            ->join('expenses_users as eu', 'u.id', '=', 'eu.user_id')
+            ->join('expenses_groups as eg', 'eu.expense_group_id', '=', 'eg.id')
+            ->where('eg.group_id', $group_id)
+            ->groupBy('u.id', 'u.name')
+            ->select('u.id', 'u.name', DB::raw('SUM(eu.montant_contribution) AS total_contribution'))
+            ->get()
+            ->keyBy('id');
+    }
+    
+    /** 🔹 Calcule le solde de chaque utilisateur (positif = créancier, négatif = débiteur) */
+    private function calculateBalances($group, $totalPrise, $AmontTotal_Contribution)
+    {
+        $nusers = $group->users->count();
+        $dettesParPersonne = $nusers > 0 ? $totalPrise / $nusers : 0;
+    
+        $balances = [];
+        foreach ($group->users as $user) {
+            $contribution = $AmontTotal_Contribution[$user->id]->total_contribution ?? 0;
+            $balances[$user->id] = round($contribution - $dettesParPersonne, 2);
+        }
+    
+        return $balances;
+    }
+    
+    /** 🔹 Optimise les transactions en réduisant le nombre de virements */
+    private function optimizeTransactions($balances)
+    {
+        $debiteurs = [];
+        $creanciers = [];
+        
+        foreach ($balances as $userId => $solde) {
+            if ($solde < 0) {
+                $debiteurs[] = ['id' => $userId, 'montant' => abs($solde)];
+            } elseif ($solde > 0) {
+                $creanciers[] = ['id' => $userId, 'montant' => $solde];
             }
         }
-        return "-" . round($account_per_person, 2);
+    
+        $transactions = [];
+        
+        while (!empty($debiteurs) && !empty($creanciers)) {
+            $debiteur = &$debiteurs[0];
+            $creancier = &$creanciers[0];
+    
+            $montant = min($debiteur['montant'], $creancier['montant']);
+            
+            $transactions[] = [
+                'from' => $debiteur['id'],
+                'to' => $creancier['id'],
+                'amount' => $montant
+            ];
+    
+            $debiteur['montant'] -= $montant;
+            $creancier['montant'] -= $montant;
+    
+            if ($debiteur['montant'] == 0) array_shift($debiteurs);
+            if ($creancier['montant'] == 0) array_shift($creanciers);
+        }
+    
+        return $transactions;
     }
+    
+    /** 🔹 Retourne une réponse d'erreur JSON */
+    private function errorResponse($message, $status)
+    {
+        return response()->json(['error' => $message], $status);
+    }
+    
     
 }
     
