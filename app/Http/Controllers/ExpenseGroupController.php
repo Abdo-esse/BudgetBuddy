@@ -103,62 +103,65 @@ class ExpenseGroupController extends Controller
 
     public function balances($group_id)
     {
-            $group = Group::find($group_id);
-
-            if (!$group) {
-                return response()->json([
-                    'error' => 'Le groupe spécifié est introuvable.',
-                ], 404);
-            }
-
-            $expenseGroups = ExpenseGroup::where('group_id', $group_id->id)
-            ->with('users')->get();
-            $groups = $group->load('users');
-            
-            if ($expenseGroups->isEmpty()) {
-                return response()->json([
-                    'error' => 'Aucune dépense trouvée pour ce groupe.',
-                ], 404);
-            }
-                        
-            $totalPrise = $expenseGroups->sum('total_prix');
-            $nusers = $groups->sum(function($group) {
-                return $group->users->count();  
-            });
-            $AmontTotal_Contribution = DB::table('users as u')
-                ->join('group_user as gu', 'u.id', '=', 'gu.user_id')
-                ->join('expenses_users as eu', 'u.id', '=', 'eu.user_id')
-                ->select('u.name', DB::raw('SUM(eu.montant_contribution) as total_contribution'))
-                ->where('gu.group_id', $group_id->id)
-                ->groupBy('u.id', 'u.name') 
-                ->get();
-
-                $dettes= $nusers > 0 ? $totalPrise / $nusers : 0;
-            $newli = [];
-
-            foreach ($groups[0]->users as $user) {
-                $newli[$user->name] = $this->CalculateAmount($user , round($dettes,2) , $AmontTotal_Contribution);
-            }
-
+        $group = Group::find($group_id->id);
+    
+        if (!$group) {
             return response()->json([
-                $newli ,  
-                "dettes" => round($dettes,2)
-            ], 200);
+                'error' => 'Le groupe spécifié est introuvable.',
+            ], 404);
+        }
+    
+        $expenseGroups = ExpenseGroup::where('group_id', $group_id->id)
+            ->with('users')->get();
+    
+        if ($expenseGroups->isEmpty()) {
+            return response()->json([
+                'error' => 'Aucune dépense trouvée pour ce groupe.',
+            ], 404);
+        }
+    
+        $totalPrise = $expenseGroups->sum('total_prix');
+        // return $totalPrise;
+        $nusers = $group->users->count();
+    
+        $AmontTotal_Contribution = DB::table('users as u')
+        ->join('expenses_users as eu', 'u.id', '=', 'eu.user_id')
+        ->join('expenses_groups as eg', 'eu.expense_group_id', '=', 'eg.id')
+        ->where('eg.group_id', $group_id->id)
+        ->groupBy('u.id', 'u.name')
+        ->select('u.id', 'u.name', DB::raw('SUM(eu.montant_contribution) AS total_contribution'))
+        ->get();
+    
+        $dettes = $nusers > 0 ? $totalPrise / $nusers : 0;
+        $newli = [];
+    
+        foreach ($group->users as $user) {
+            $newli[$user->name] = $this->CalculateAmount($user, round($dettes, 2), $AmontTotal_Contribution);
+        }
+    
+        return response()->json([
+            'balances' => $newli,
+            'dettes' => round($dettes, 2)
+        ], 200);
     }
-    public function CalculateAmount($user , ?float $account_per_person ,$AmontTotal_Contribution) {
-        foreach ($AmontTotal_Contribution as $person ) {
-            if($user->name == $person->name){
-                if($person->total_contribution > $account_per_person){
-                    return "+" . $person->total_contribution - $account_per_person;
-                }else if($person->total_contribution == $account_per_person){
-                    return "rigilo" . $person->total_contribution - $account_per_person;
-                }else{
-                    return "You mush pay " . $person->total_contribution - $account_per_person;
+    
+    public function CalculateAmount($user, ?float $account_per_person, $AmontTotal_Contribution)
+    {
+        foreach ($AmontTotal_Contribution as $person) {
+            if ($user->name == $person->name) {
+                $difference = round($account_per_person - $person->total_contribution, 2);
+                if ($difference > 0) {
+                    return "+" . $difference ;
+                } elseif ($difference == 0) {
+                    return "Équilibré";
+                } else {
+                    return "vous ete besoin " . abs($difference) ;
                 }
             }
         }
-        return "-" . $account_per_person;
+        return "-" . round($account_per_person, 2);
     }
+    
 }
     
     
