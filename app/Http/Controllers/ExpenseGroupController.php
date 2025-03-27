@@ -101,108 +101,87 @@ class ExpenseGroupController extends Controller
         //
     }
 
-    public function balances($group)
-    {
-        $group = $this->getGroupById($group->id);
-        if (!$group) return $this->errorResponse('Le groupe spécifié est introuvable.', 404);
+    public function balances($group_id)
+{
+    $group = Group::find($group_id->id);
     
-        $expenseGroups = $this->getExpenseGroups($group->id);
-        if ($expenseGroups->isEmpty()) return $this->errorResponse('Aucune dépense trouvée pour ce groupe.', 404);
-    
-        $totalPrise = $expenseGroups->sum('total_prix');
-        $AmontTotal_Contribution = $this->calculateTotalContribution($group->id);
-        $balances = $this->calculateBalances($group, $totalPrise, $AmontTotal_Contribution);
-        $transactions = $this->optimizeTransactions($balances);
-    
+    if (!$group) {
         return response()->json([
-            'transactions' => $transactions,
-            'balances' => $balances
-        ], 200);
+            'error' => 'Le groupe spécifié est introuvable.',
+        ], 404);
     }
-    
-    /** 🔹 Récupère le groupe ou retourne null si non trouvé */
-    private function getGroupById($group_id)
-    {
-        return Group::find($group_id);
+
+    $expenseGroups = ExpenseGroup::where('group_id', $group_id->id)
+        ->with('users')->get();
+
+    if ($expenseGroups->isEmpty()) {
+        return response()->json([
+            'error' => 'Aucune dépense trouvée pour ce groupe.',
+        ], 404);
     }
+
+    $totalPrise = $expenseGroups->sum('total_prix');
     
-    /** 🔹 Récupère les dépenses du groupe */
-    private function getExpenseGroups($group_id)
-    {
-        return ExpenseGroup::where('group_id', $group_id)->with('users')->get();
+    $nusers = $group->users->count();
+    
+    $AmontTotal_Contribution = DB::table('users as u')
+        ->join('expenses_users as eu', 'u.id', '=', 'eu.user_id')
+        ->join('expenses_groups as eg', 'eu.expense_group_id', '=', 'eg.id')
+        ->where('eg.group_id', $group_id->id)
+        ->groupBy('u.id', 'u.name')
+        ->select('u.id', 'u.name', DB::raw('SUM(eu.montant_contribution) AS total_contribution'))
+        ->get()
+        ->keyBy('id');
+
+    $dettesParPersonne = $nusers > 0 ? $totalPrise / $nusers : 0;
+
+    // Calculer les soldes (montant dû ou à recevoir)
+    $balances = [];
+    foreach ($group->users as $user) {
+        $contribution = $AmontTotal_Contribution[$user->id]->total_contribution ?? 0;
+        $balances[$user->id] = round($contribution - $dettesParPersonne, 2);
     }
+
+    // Trouver les débiteurs et créanciers
+    $debiteurs = [];
+    $creanciers = [];
     
-    /** 🔹 Calcule la contribution totale de chaque utilisateur */
-    private function calculateTotalContribution($group_id)
-    {
-        return DB::table('users as u')
-            ->join('expenses_users as eu', 'u.id', '=', 'eu.user_id')
-            ->join('expenses_groups as eg', 'eu.expense_group_id', '=', 'eg.id')
-            ->where('eg.group_id', $group_id)
-            ->groupBy('u.id', 'u.name')
-            ->select('u.id', 'u.name', DB::raw('SUM(eu.montant_contribution) AS total_contribution'))
-            ->get()
-            ->keyBy('id');
-    }
-    
-    /** 🔹 Calcule le solde de chaque utilisateur (positif = créancier, négatif = débiteur) */
-    private function calculateBalances($group, $totalPrise, $AmontTotal_Contribution)
-    {
-        $nusers = $group->users->count();
-        $dettesParPersonne = $nusers > 0 ? $totalPrise / $nusers : 0;
-    
-        $balances = [];
-        foreach ($group->users as $user) {
-            $contribution = $AmontTotal_Contribution[$user->id]->total_contribution ?? 0;
-            $balances[$user->id] = round($contribution - $dettesParPersonne, 2);
+    foreach ($balances as $userId => $solde) {
+        if ($solde < 0) {
+            $debiteurs[] = ['id' => $userId, 'montant' => abs($solde)];
+        } elseif ($solde > 0) {
+            $creanciers[] = ['id' => $userId, 'montant' => $solde];
         }
-    
-        return $balances;
     }
+
+    // Algorithme pour minimiser les transactions
+    $transactions = [];
     
-    /** 🔹 Optimise les transactions en réduisant le nombre de virements */
-    private function optimizeTransactions($balances)
-    {
-        $debiteurs = [];
-        $creanciers = [];
+    while (!empty($debiteurs) && !empty($creanciers)) {
+        $debiteur = &$debiteurs[0];
+        $creancier = &$creanciers[0];
+
+        $montant = min($debiteur['montant'], $creancier['montant']);
         
-        foreach ($balances as $userId => $solde) {
-            if ($solde < 0) {
-                $debiteurs[] = ['id' => $userId, 'montant' => abs($solde)];
-            } elseif ($solde > 0) {
-                $creanciers[] = ['id' => $userId, 'montant' => $solde];
-            }
-        }
-    
-        $transactions = [];
-        
-        while (!empty($debiteurs) && !empty($creanciers)) {
-            $debiteur = &$debiteurs[0];
-            $creancier = &$creanciers[0];
-    
-            $montant = min($debiteur['montant'], $creancier['montant']);
-            
-            $transactions[] = [
-                'from' => $debiteur['id'],
-                'to' => $creancier['id'],
-                'amount' => $montant
-            ];
-    
-            $debiteur['montant'] -= $montant;
-            $creancier['montant'] -= $montant;
-    
-            if ($debiteur['montant'] == 0) array_shift($debiteurs);
-            if ($creancier['montant'] == 0) array_shift($creanciers);
-        }
-    
-        return $transactions;
+        $transactions[] = [
+            'from' => $debiteur['id'],
+            'to' => $creancier['id'],
+            'amount' => $montant
+        ];
+
+        $debiteur['montant'] -= $montant;
+        $creancier['montant'] -= $montant;
+
+        if ($debiteur['montant'] == 0) array_shift($debiteurs);
+        if ($creancier['montant'] == 0) array_shift($creanciers);
     }
-    
-    /** 🔹 Retourne une réponse d'erreur JSON */
-    private function errorResponse($message, $status)
-    {
-        return response()->json(['error' => $message], $status);
-    }
+
+    return response()->json([
+        'transactions' => $transactions,
+        'balances' => $balances
+    ], 200);
+}
+
     
     
 }
